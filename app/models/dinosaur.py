@@ -1,7 +1,8 @@
+from enum import Enum
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
-class DinoCategory(str, "Enum"):
+class DinoCategory(str, Enum):
     TERRESTRIAL = "terrestrial"
     AQUATIC = "aquatic"
     AERIAL = "aerial"
