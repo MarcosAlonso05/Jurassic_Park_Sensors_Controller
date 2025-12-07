@@ -1,150 +1,105 @@
+import asyncio
 import sys
 import os
-from uuid import uuid4
+import logging
+from contextlib import asynccontextmanager
+import reactivex as rx
+from reactivex import operators as ops
+from fastapi import FastAPI
 
-# --- FIX DE IMPORTACIONES ---
-# Esto permite ejecutar el archivo directamente con "python app/main.py"
-# sin que te de el error "ModuleNotFoundError".
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.models.infrastructure import Park, Habitat, HabitatDimensions
 from app.models.dinosaur import Dinosaur, DinoCategory
-from app.models.sensors import TemperatureSensor, MotionSensor, HeartRateSensor
-from app.services.evaluator import RuleEvaluator
+from app.services.stream_manager import JurassicStreamManager
+from app.services.simulator import SensorSimulator
 
-def print_separator(title):
-    print(f"\n{'='*60}")
-    print(f" {title}")
-    print(f"{'='*60}")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("MainController")
 
-def initialize_park() -> Park:
+def setup_infrastructure():
     """
-    Creates the default infrastructure: Dinos, Habitats and the Park itself.
+    Crea los datos base del parque: Dinos y Hábitats.
     """
-    print_separator("STEP 1: INITIALIZING JURASSIC PARK INFRASTRUCTURE")
-
-    # 1. Create Dinosaurs
     rex = Dinosaur(
-        name="Rexy",
-        species="Tyrannosaurus Rex",
-        category=DinoCategory.TERRESTRIAL,
-        health_points=100,
-        heart_rate=60
+        name="Rexy", species="T-Rex", category=DinoCategory.TERRESTRIAL, 
+        health_points=100, heart_rate=60
+    )
+    blue = Dinosaur(
+        name="Blue", species="Velociraptor", category=DinoCategory.TERRESTRIAL, 
+        health_points=95, heart_rate=110
+    )
+    mosa = Dinosaur(
+        name="The Queen", species="Mosasaurus", category=DinoCategory.AQUATIC, 
+        health_points=100, heart_rate=35
     )
     
-    blue = Dinosaur(
-        name="Blue",
-        species="Velociraptor",
-        category=DinoCategory.TERRESTRIAL,
-        health_points=95,
-        heart_rate=110
-    )
-
-    mosa = Dinosaur(
-        name="The Queen",
-        species="Mosasaurus",
-        category=DinoCategory.AQUATIC,
-        health_points=100,
-        heart_rate=35
-    )
-
-    print(f"[OK] Dinosaurs cloned: {rex.name}, {blue.name}, {mosa.name}")
-
-    # 2. Create Habitats
-    # T-Rex Paddock (Large, 25m high fence)
     paddock_rex = Habitat(
-        name="T-Rex Paddock",
-        size=HabitatDimensions(x=800, y=800, z=25), 
-        mean_temperature=28.0,
+        name="T-Rex Paddock", 
+        size=HabitatDimensions(x=800, y=800, z=25),
+        mean_temperature=28.0, 
         dinosaur_ids=[rex.id]
     )
-
-    # Raptor Pen (Small, 15m high fence)
-    raptor_pen = Habitat(
-        name="Raptor Containment Unit",
-        size=HabitatDimensions(x=100, y=100, z=15),
-        mean_temperature=26.0,
-        dinosaur_ids=[blue.id]
-    )
-
-    # Lagoon (Deep water, 80m depth)
+    
     lagoon = Habitat(
-        name="Jurassic World Lagoon",
-        size=HabitatDimensions(x=1500, y=1000, z=80),
-        mean_temperature=20.0,
+        name="Lagoon", 
+        size=HabitatDimensions(x=1500, y=1000, z=80), 
+        mean_temperature=20.0, 
         dinosaur_ids=[mosa.id]
     )
 
-    print(f"[OK] Habitats constructed: {paddock_rex.name}, {raptor_pen.name}, {lagoon.name}")
-
-    # 3. Create Park
     park = Park(name="Jurassic Park - Isla Nublar")
     park.add_habitat(paddock_rex)
-    park.add_habitat(raptor_pen)
     park.add_habitat(lagoon)
-
-    return park, rex, blue, mosa # Returning objects for simulation testing
-
-def run_simulation():
-    """
-    Simulates sensor readings coming in and checks for alerts.
-    """
-    # Load Infrastructure
-    park, rex, blue, mosa = initialize_park()
     
-    # Let's pick the T-Rex Paddock for testing
-    paddock = park.habitats[0] 
+    return park, [rex, blue, mosa]
 
-    print_separator(f"STEP 2: STARTING SENSOR SIMULATION ON '{paddock.name}'")
-    print(f"Context: Max Height (Z) = {paddock.size.z}m | Target Temp = {paddock.mean_temperature}C")
-
-    # --- SCENARIO 1: Temperature Normal ---
-    print("\n>>> Scenario 1: Normal Morning")
-    sensor_temp = TemperatureSensor(
-        id="temp-001", habitat_id=paddock.id, sensor_type="temperature",
-        value=27.5, unit="celsius" # Close to 28.0
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info(">>> BOOTING JURASSIC PARK SYSTEMS...")
+    
+    park, dinos = setup_infrastructure()
+    
+    stream_manager = JurassicStreamManager(park, dinos)
+    stream_manager.initialize()
+    
+    simulator = SensorSimulator(park, dinos)
+    
+    logger.info(">>> CONNECTING SENSORS...")
+    sensor_stream = rx.merge(
+        simulator.create_temperature_stream(interval_sec=2.0), # Temp cada 2s
+        simulator.create_motion_stream(interval_sec=3.0),      # Movimiento cada 3s
+        simulator.create_heart_rate_stream(interval_sec=1.0)   # Corazón cada 1s
     )
-    alert = RuleEvaluator.evaluate_temperature(sensor_temp, paddock)
-    if alert:
-        print(f"[ALARM] {alert.severity}: {alert.message}")
-    else:
-        print(f"[INFO] Status Green. Temp: {sensor_temp.value}C")
-
-    # --- SCENARIO 2: Heatwave (Warning) ---
-    print("\n>>> Scenario 2: Ventilation Failure (Heatwave)")
-    sensor_temp_hot = TemperatureSensor(
-        id="temp-001", habitat_id=paddock.id, sensor_type="temperature",
-        value=38.0, unit="celsius" # Way above 28.0 (+10)
+    
+    subscription = sensor_stream.subscribe(
+        on_next=lambda data: stream_manager.on_sensor_data(data),
+        on_error=lambda e: logger.error(f"Sensor Failure: {e}")
     )
-    alert = RuleEvaluator.evaluate_temperature(sensor_temp_hot, paddock)
-    if alert:
-        print(f" [ALARM!] SEVERITY: {alert.severity.upper()}")
-        print(f"          MSG: {alert.message}")
+    
+    logger.info(">>> SYSTEM ONLINE. LISTENING TO SENSORS.")
+    
+    yield # Aquí es donde la aplicación se queda corriendo y escuchando peticiones
+    
+    logger.info(">>> SHUTTING DOWN SYSTEMS...")
+    subscription.dispose() # Cortamos el flujo de datos limpiamente
 
-    # --- SCENARIO 3: Motion Breach (Critical) ---
-    print("\n>>> Scenario 3: T-Rex Climbing Fence")
-    # Coordinates: x=50, y=50, z=26 (Fence is 25m high!)
-    sensor_motion = MotionSensor(
-        id="motion-055", habitat_id=paddock.id, sensor_type="motion",
-        is_detected=True, sensitivity=10, coordinates="50,50,26" 
-    )
-    alert = RuleEvaluator.evaluate_motion(sensor_motion, paddock)
-    if alert:
-        print(f" [ALARM!] SEVERITY: {alert.severity.upper()}")
-        print(f"          MSG: {alert.message}")
+app = FastAPI(
+    title="Jurassic Park Reactive Monitor",
+    description="System to monitor concurrent sensor data using RxPY",
+    version="1.0.0",
+    lifespan=lifespan # Vinculamos el ciclo de vida aquí
+)
 
-    # --- SCENARIO 4: Heart Rate Stress (Raptor) ---
-    print("\n>>> Scenario 4: Blue is Panicking")
-    # Blue's baseline is 110. Reading is 180 (Stress).
-    sensor_heart = HeartRateSensor(
-        id="bio-blue", habitat_id=paddock.id, sensor_type="heart_rate",
-        dinosaur_id=str(blue.id), bpm=180, stress_level="High"
-    )
-    # Note: We need to pass the Dino object, not the Habitat
-    alert = RuleEvaluator.evaluate_heart_rate(sensor_heart, blue) 
-    if alert:
-        print(f" [ALARM!] SEVERITY: {alert.severity.upper()}")
-        print(f"          MSG: {alert.message}")
+@app.get("/")
+async def health_check():
+    """Endpoint simple para verificar que el servidor vive."""
+    return {
+        "system": "Jurassic Park Monitor", 
+        "status": "operational", 
+        "location": "Isla Nublar"
+    }
 
 if __name__ == "__main__":
-    run_simulation()
+    import uvicorn
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
