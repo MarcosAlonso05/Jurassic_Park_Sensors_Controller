@@ -6,9 +6,9 @@ El sistema simula, ingesta y procesa flujos de datos concurrentes provenientes d
 ---
 ## Requisitos
 
-´´´
+```
 pip install fastapi uvicorn reactivex pydantic jinja2 aiofiles
-´´´
+```
 (O instalarlo desde el archivo txt requeriments del docs)
 
 ## Ejecución
