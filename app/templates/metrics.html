@@ -23,8 +23,22 @@
         </div>
     </div>
 
-    <div class="chart-container">
-        <canvas id="throughputChart"></canvas>
+    <div class="charts-wrapper" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px;">
+        
+        <div class="chart-container" style="margin-bottom: 0;">
+            <h3>System Load (TPS)</h3>
+            <div style="height: 300px;">
+                <canvas id="throughputChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container" style="margin-bottom: 0;">
+            <h3>Park Vital Signs (Avg BPM)</h3>
+            <div style="height: 300px;">
+                <canvas id="bpmChart"></canvas>
+            </div>
+        </div>
+        
     </div>
 
     <div class="logs-section">

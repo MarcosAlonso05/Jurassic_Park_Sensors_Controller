@@ -11,11 +11,8 @@ from app.models.sensors import SensorEvent
 
 logger = logging.getLogger("JurassicReactor")
 
+# Simulator that ingest data
 class JurassicStreamManager:
-    """
-    Central Service that ingests data, buffers it (Backpressure),
-    and processes it asynchronously.
-    """
     def __init__(self, park_context, dinos_context):
         self.park = park_context
         self.dinos_map = {str(d.id): d for d in dinos_context}
@@ -27,7 +24,8 @@ class JurassicStreamManager:
             "total_events_processed": 0,
             "total_alerts_triggered": 0,
             "start_time": datetime.now(),
-            "last_batch_size": 0
+            "last_batch_size": 0,
+            "current_avg_bpm": 0
         }
 
     def initialize(self):
@@ -46,11 +44,24 @@ class JurassicStreamManager:
 
     def on_sensor_data(self, data: SensorEvent):
         self.incoming_stream.on_next(data)
+        
+    def register_dinosaur(self, dino):
+        self.dinos_map[str(dino.id)] = dino
+
+    def unregister_dinosaur(self, dino_id):
+        if str(dino_id) in self.dinos_map:
+            del self.dinos_map[str(dino_id)]
 
     def _process_batch(self, batch: list[SensorEvent]):
         count = len(batch)
         self.stats["total_events_processed"] += count
         self.stats["last_batch_size"] = count
+        
+        bpm_readings = [r.bpm for r in batch if r.sensor_type == "heart_rate"]
+        
+        if bpm_readings:
+            avg_bpm = sum(bpm_readings) / len(bpm_readings)
+            self.stats["current_avg_bpm"] = round(avg_bpm, 1)
         
         logger.info(f"Processing Batch of {count} events...")
         
@@ -77,12 +88,11 @@ class JurassicStreamManager:
 
         if alert:
             self.stats["total_alerts_triggered"] += 1
-            logger.critical(f"🚨 ALERTA [{alert.severity}]: {alert.message}")
+            logger.critical(f"==> ALERT! [{alert.severity}]: {alert.message}")
         else:
             logger.debug(f"OK: {reading.sensor_type}")
 
     def get_system_metrics(self):
-        """Calcula métricas en tiempo real para el frontend"""
         now = datetime.now()
         uptime = (now - self.stats["start_time"]).total_seconds()
         
@@ -95,5 +105,6 @@ class JurassicStreamManager:
             "total_processed": self.stats["total_events_processed"],
             "total_alerts": self.stats["total_alerts_triggered"],
             "current_throughput_tps": round(tps, 2),
-            "last_batch_size": self.stats["last_batch_size"]
+            "last_batch_size": self.stats["last_batch_size"],
+            "avg_bpm": self.stats["current_avg_bpm"]
         }

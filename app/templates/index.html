@@ -3,8 +3,8 @@
 {% block content %}
     <h1>Control Center</h1>
     <div class="controls">
-        <button onclick="alert('Función añadir Hábitat pendiente')" class="btn">Add Habitat</button>
-        <button onclick="alert('Función añadir Dino pendiente')" class="btn">Add Dinosaur</button>
+        <button onclick="openModal('habitatModal')" class="btn">Add Habitat</button>
+        <button onclick="openModal('dinoModal')" class="btn">Add Dinosaur</button>
     </div>
 
     <div id="habitat-grid" class="habitat-grid">
@@ -12,7 +12,59 @@
     </div>
 
     <div class="alerts-section">
-        <h3> Live Alerts Feed</h3>
+        <h3>Live Alerts Feed</h3>
         <div id="alerts-container"></div>
+    </div>
+
+    <div id="habitatModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('habitatModal')">&times;</span>
+            <h2>Construct New Habitat</h2>
+            <form id="habitatForm" onsubmit="submitHabitat(event)">
+                <label>Name:</label>
+                <input type="text" name="name" required placeholder="e.g. Raptor Training Area">
+                
+                <label>Target Temp (°C):</label>
+                <input type="number" name="temp" required value="25">
+                
+                <div class="dims-row">
+                    <div><label>Width (X):</label><input type="number" name="width" required value="100"></div>
+                    <div><label>Length (Y):</label><input type="number" name="length" required value="100"></div>
+                    <div><label>Height (Z):</label><input type="number" name="height" required value="20"></div>
+                </div>
+                
+                <button type="submit" class="btn" style="width:100%; margin-top:10px">Build Habitat</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="dinoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('dinoModal')">&times;</span>
+            <h2>Incubate New Asset</h2>
+            <form id="dinoForm" onsubmit="submitDino(event)">
+                <label>Name:</label>
+                <input type="text" name="name" required placeholder="e.g. Bumpy">
+                
+                <label>Species:</label>
+                <input type="text" name="species" required placeholder="e.g. Ankylosaurus">
+                
+                <label>Category:</label>
+                <select name="category">
+                    <option value="terrestrial">Terrestrial</option>
+                    <option value="aquatic">Aquatic</option>
+                    <option value="aerial">Aerial</option>
+                </select>
+
+                <label>Base Heart Rate (BPM):</label>
+                <input type="number" name="heart_rate" required value="60">
+
+                <label>Assign to Habitat:</label>
+                <select id="habitatSelect" name="habitat_id" required>
+                    </select>
+                
+                <button type="submit" class="btn" style="width:100%; margin-top:10px">Clone Dinosaur</button>
+            </form>
+        </div>
     </div>
 {% endblock %}

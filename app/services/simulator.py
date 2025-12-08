@@ -76,5 +76,9 @@ class SensorSimulator:
             bpm=bpm,
             stress_level=stress
         )
-        
     
+    def add_dinosaur(self, dino):
+        self.dinosaurs.append(dino)
+
+    def remove_dinosaur(self, dino_id):
+        self.dinosaurs = [d for d in self.dinosaurs if str(d.id) != str(dino_id)]

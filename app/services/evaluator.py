@@ -48,12 +48,10 @@ class RuleEvaluator:
 
         if reading.coordinates:
             try:
-                # Format expected: "x,y,z"
                 coords = [float(c) for c in reading.coordinates.split(",")]
                 if len(coords) == 3:
                     z_height = coords[2]
                     
-                    # If something is higher than the habitat ceiling
                     if z_height > habitat.size.z:
                         return Alert(
                             sensor_id=reading.id,
@@ -80,7 +78,7 @@ class RuleEvaluator:
             return Alert(
                 sensor_id=reading.id,
                 severity=severity,
-                message=f"Dino {dino.name} ({dino.species}) is stressed! BPM: {current} (Base: {baseline})",
+                message=f"Dinosaur {dino.name} ({dino.species}) is stressed! BPM: {current} (Base: {baseline})",
                 triggered_value=current
             )
             
