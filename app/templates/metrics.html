@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="metrics-container">
+    <h1>System Metrics & Telemetry</h1>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Uptime</h3>
+            <div id="metric-uptime" class="stat-value">0s</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Events</h3>
+            <div id="metric-total" class="stat-value">0</div>
+        </div>
+        <div class="stat-card alert-card">
+            <h3>Total Alerts</h3>
+            <div id="metric-alerts" class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Current Load (TPS)</h3>
+            <div id="metric-tps" class="stat-value">0</div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="throughputChart"></canvas>
+    </div>
+
+    <div class="logs-section">
+        <h3>System Logs (Last 50 lines)</h3>
+        <div id="full-log-viewer" class="log-viewer">
+            Loading logs...
+        </div>
+    </div>
+</div>
+
+<script>
+    window.isMetricsPage = true;
+</script>
+{% endblock %}

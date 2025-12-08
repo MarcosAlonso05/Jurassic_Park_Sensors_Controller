@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Control Center</h1>
+    <div class="controls">
+        <button onclick="alert('Función añadir Hábitat pendiente')" class="btn">Add Habitat</button>
+        <button onclick="alert('Función añadir Dino pendiente')" class="btn">Add Dinosaur</button>
+    </div>
+
+    <div id="habitat-grid" class="habitat-grid">
+        <p>Cargando hábitats...</p>
+    </div>
+
+    <div class="alerts-section">
+        <h3> Live Alerts Feed</h3>
+        <div id="alerts-container"></div>
+    </div>
+{% endblock %}

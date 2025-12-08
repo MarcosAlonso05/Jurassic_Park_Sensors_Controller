@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="detail-container">
+    <a href="/" class="back-btn">← Back to Dashboard</a>
+    
+    <div class="habitat-header">
+        <h1>{{ habitat.name }}</h1>
+        <span class="badge-id">ID: {{ habitat.id }}</span>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-box">
+            <h3>Environment</h3>
+            <p><strong>Temperature Target:</strong> {{ habitat.mean_temperature }}°C</p>
+            <p><strong>Current Status:</strong> Active</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>Dimensions (Meters)</h3>
+            <ul>
+                <li><strong>Width (X):</strong> {{ habitat.size.x }}m</li>
+                <li><strong>Length (Y):</strong> {{ habitat.size.y }}m</li>
+                <li><strong>Height (Z):</strong> {{ habitat.size.z }}m</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="dino-section">
+        <h2>Inhabitants</h2>
+        {% if habitat.dinosaur_ids %}
+            <ul class="dino-list">
+            {% for dino_id in habitat.dinosaur_ids %}
+                <li class="dino-item">
+                    <span class="dino-icon">🦖</span> 
+                    <strong>Dino ID:</strong> {{ dino_id }}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="no-dinos">No dinosaurs currently in this habitat.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
