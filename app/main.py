@@ -4,19 +4,21 @@ import reactivex as rx
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.core.logging_config import setup_logging
 from app.core.state import running_system
 from app.services.stream_manager import JurassicStreamManager
 from app.services.simulator import SensorSimulator
 from app.api.routes import router
+
 from app.models.infrastructure import Park, Habitat, HabitatDimensions
 from app.models.dinosaur import Dinosaur, DinoCategory
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 setup_logging()
 
-# == Defaul infrastructure ==
+# == INITIAL SETUP ==
 
 def setup_infrastructure():
     rex = Dinosaur(
@@ -62,6 +64,8 @@ def setup_infrastructure():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print(">>> SYSTEM BOOT: INITIATING JURASSIC PARK PROTOCOLS...")
+    
     park, dinos = setup_infrastructure()
     
     running_system["park"] = park
@@ -71,6 +75,7 @@ async def lifespan(app: FastAPI):
     running_system["manager"] = manager
     
     simulator = SensorSimulator(park, dinos)
+    running_system["simulator"] = simulator
     
     sensor_stream = rx.merge(
         simulator.create_temperature_stream(2.0),
@@ -83,16 +88,25 @@ async def lifespan(app: FastAPI):
         on_error=lambda e: print(f"CRITICAL STREAM ERROR: {e}")
     )
     
+    print(">>> SYSTEM ONLINE: SENSORS ACTIVE.")
+    
     yield
     
+    print(">>> SYSTEM SHUTDOWN.")
     sub.dispose()
 
-app = FastAPI(title="Jurassic Park System", lifespan=lifespan)
+app = FastAPI(
+    title="Jurassic Park Reactive System",
+    description="Real-time sensor monitoring using RxPY and FastAPI",
+    version="2.0.0",
+    lifespan=lifespan
+)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(router)
 
+# == ENTRY POINT ==
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

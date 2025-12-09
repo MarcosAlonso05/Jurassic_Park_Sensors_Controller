@@ -43,7 +43,7 @@ async function fetchAlertsTicker() {
         
         container.innerHTML = '';
         
-        const alerts = data.logs.filter(line => line.includes("ALERTA"));
+        const alerts = data.logs.filter(line => line.includes("ALERT!"));
 
         if (alerts.length === 0) {
             container.innerHTML = '<div class="alert-item" style="background:#2ecc71; color:white"> System Normal. No active threats.</div>';
