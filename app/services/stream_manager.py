@@ -11,7 +11,6 @@ from app.models.sensors import SensorEvent
 
 logger = logging.getLogger("JurassicReactor")
 
-# Simulator that ingest data
 class JurassicStreamManager:
     def __init__(self, park_context, dinos_context):
         self.park = park_context

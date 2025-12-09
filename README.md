@@ -1,7 +1,8 @@
-# Jurassic Parck Sensors Controller
+# Jurassic Park Sensors Controller
 
 Este proyecto es una implementación de un sistema de monitorización en tiempo real para Jurassic Park, desarrollado en **Python**.
 El sistema simula, ingesta y procesa flujos de datos concurrentes provenientes de múltiples sensores (Temperatura, Movimiento, Frecuencia Cardíaca).
+Mas información en docs.
 
 ---
 ## Requisitos
@@ -19,6 +20,7 @@ python app/main.py
 ```
 
 ---
+
 ## Enlace al repositorio
 
 ```
